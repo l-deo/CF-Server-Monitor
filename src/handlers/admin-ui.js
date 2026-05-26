@@ -32,7 +32,7 @@ export async function handleAdminUI(request, env, sys) {
         : '🏳️';
       
       const cmdApp = "cur" + "l";
-      const cmd = `${cmdApp} -sL ${host}/install.sh | bash -s install ${s.id} ${env.API_SECRET} ${host}/update`;
+      const cmd = `${cmdApp} -sL ${host}/install.sh | bash -s install ${s.id} ${env.API_SECRET} ${host}/update 60`;
       
       trs += `
         <tr class="server-row">
@@ -863,7 +863,7 @@ export async function handleAdminUI(request, env, sys) {
       <div id="tab-servers" class="tab-content active">
         <div class="alert alert-info">
           <span class="alert-icon">[i]</span>
-          <span>点击 <strong>📋</strong> 复制安装命令，在目标服务器上执行 <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;">$ bash install.sh</code> 即可完成探针部署</span>
+          <span>点击 <strong>📋</strong> 复制安装命令，在目标服务器上执行 <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;">$ bash install.sh</code> 即可完成探针部署 后面一个为时上报间隔参数，单位为秒</span>
         </div>
         
         <div class="toolbar">
