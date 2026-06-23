@@ -10,6 +10,26 @@
 //
 // - 心跳：每 25s 向客户端发送 ping，避免中间代理断连。
 
+function parseAllowedOrigins(corsAllowedOrigins) {
+  if (!corsAllowedOrigins || corsAllowedOrigins.trim() === '') {
+    return [];
+  }
+  return corsAllowedOrigins
+    .split(',')
+    .map(o => o.trim())
+    .filter(o => o !== '');
+}
+
+function isOriginAllowed(origin, allowedOrigins) {
+  if (allowedOrigins.length === 0) {
+    return true;
+  }
+  if (!origin) {
+    return false;
+  }
+  return allowedOrigins.includes(origin);
+}
+
 export class MetricsBroadcaster {
   constructor(state, env) {
     this.state = state;
@@ -91,6 +111,17 @@ export class MetricsBroadcaster {
       if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
         return new Response('Expected WebSocket upgrade request', { status: 426 });
       }
+      
+      const origin = request.headers.get('Origin');
+      const allowedOrigins = parseAllowedOrigins(this.env.CORS_ALLOWED_ORIGINS);
+      
+      if (!isOriginAllowed(origin, allowedOrigins)) {
+        return new Response(JSON.stringify({ error: 'Origin not allowed', code: 403 }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
       const scope = (url.searchParams.get('subscribe') || 'all').toLowerCase();
 
       // @ts-ignore - Cloudflare Workers 运行时提供 WebSocketPair
@@ -130,7 +161,11 @@ export class MetricsBroadcaster {
         }));
       } catch (_) {}
 
-      return new Response(null, { status: 101, webSocket: client });
+      const responseHeaders = new Headers();
+      responseHeaders.set('Access-Control-Allow-Origin', origin);
+      responseHeaders.set('Access-Control-Allow-Credentials', 'true');
+
+      return new Response(null, { status: 101, webSocket: client, headers: responseHeaders });
     }
 
     // 2) 内部广播入口：/update 成功后由 Worker 内部转发

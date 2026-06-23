@@ -2,7 +2,7 @@
 
 一个基于 Cloudflare Workers + D1 + Durable Objects 的多服务器监控探针系统，支持实时监控、历史数据查看、延迟追踪、地图展示等功能。兼容主流Linux系统，Alpine Linux，OpenWrt，Windows系统。**演示地址**：<https://tz.dashdeep.dpdns.org/>
 
-**当前版本：V2.7.3.3**
+**当前版本：V2.7.3.4**
 
 <2.7.1 新增了功能，需要**升级安装脚本** & **后台升级数据库** 才能生效，否则会产生数据库结构错误或者图表显示异常
 ```
@@ -28,6 +28,7 @@ cat /etc/config/cf-probe/config.conf
 <details>
 <summary>更新记录</summary>
 
+- V2.7.3.4 添加允许跨域配置，为后续版本额外功能做铺垫
 - V2.7.3.3 压缩定时任务4个为2个，避免超出免费额度
 - V2.7.3.2 合并通知告警，其他代码逻辑优化
 - V2.7.3.1 当request.cf返回`cf object not available`错误，导致国家/地区代码获取失败，使用request.headers获取作为备选

@@ -152,7 +152,8 @@ export const adminApi = async (data) => {
   const res = await fetch(`${API_BASE}/admin/api`, {
     method: 'POST',
     headers,
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
+    credentials: 'include'
   })
 
   if (res.status === 401) {
@@ -174,7 +175,8 @@ export const login = async (username, password, turnstileToken = '') => {
   const res = await fetch(`${API_BASE}/admin/api`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ action: 'login', username, password })
+    body: JSON.stringify({ action: 'login', username, password }),
+    credentials: 'include'
   })
   
   if (res.ok) {

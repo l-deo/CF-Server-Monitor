@@ -83,7 +83,8 @@ export const http = {
     
     const res = await fetch(`${API_BASE}${url}`, {
       method: 'GET',
-      headers
+      headers,
+      credentials: 'include'
     })
     
     return handleResponse(res, { autoRedirect })
@@ -96,7 +97,8 @@ export const http = {
     const res = await fetch(`${API_BASE}${url}`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      credentials: 'include'
     })
     
     return handleResponse(res, { autoRedirect })
@@ -109,7 +111,8 @@ export const http = {
     const res = await fetch(`${API_BASE}${url}`, {
       method: 'PUT',
       headers,
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      credentials: 'include'
     })
     
     return handleResponse(res, { autoRedirect })
@@ -121,7 +124,8 @@ export const http = {
     
     const res = await fetch(`${API_BASE}${url}`, {
       method: 'DELETE',
-      headers
+      headers,
+      credentials: 'include'
     })
     
     return handleResponse(res, { autoRedirect })

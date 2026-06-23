@@ -10,6 +10,7 @@ import { checkAuth, simpleAuthResponse } from './middleware/auth.js';
 import { getServerDetail, getMetricsHistoryCache, setMetricsHistoryCache, getCacheDuration } from './utils/cache.js';
 import { AppError, createSuccessResponse, createUnauthorizedResponse, createBadRequestResponse, createNotFoundResponse, createErrorResponse } from './utils/errors.js';
 import { verifyTurnstileToken } from './utils/common.js';
+import { getCorsAllowedOrigins, createOptionsResponse, applyCors } from './utils/cors.js';
 // Durable Objects: 实时指标广播
 // 显式 import + extends，确保 wrangler 静态分析器能在入口文件直接识别此 DO 类
 import { MetricsBroadcaster as _MetricsBroadcaster }
@@ -134,15 +135,22 @@ export default {
     const method = request.method;
     const path = url.pathname;
 
+    const corsAllowedOrigins = getCorsAllowedOrigins(env);
+    
     if (!env.API_SECRET || env.API_SECRET.length === 0) {
-      return createBadRequestResponse('API_SECRET is required');
+      const response = createBadRequestResponse('API_SECRET is required');
+      return applyCors(response, request, corsAllowedOrigins);
+    }
+    
+    if (method === 'OPTIONS') {
+      return createOptionsResponse(request, corsAllowedOrigins);
     }
 
     if (env.ASSETS && method === 'GET') {
       try {
         const res = await env.ASSETS.fetch(new Request(`http://static${path}`, request));
         if (res.ok) {
-          return res;
+          return applyCors(res, request, corsAllowedOrigins);
         }
       } catch (e) {
       }
@@ -174,7 +182,8 @@ export default {
           const isVerified = await verifyTurnstileToken(turnstileToken, turnstileSecretKey);
           
           if (!isVerified) {
-            return createErrorResponse(new AppError('Turnstile verification failed', 403));
+            const response = createErrorResponse(new AppError('Turnstile verification failed', 403));
+            return applyCors(response, request, corsAllowedOrigins);
           }
           
           setTurnstileCookie = true;
@@ -260,27 +269,30 @@ export default {
       if (route.method === method && route.path === path) {
         const response = await route.handler();
         
-        if (setTurnstileCookie && response) {
+        const corsResponse = applyCors(response, request, corsAllowedOrigins);
+        
+        if (setTurnstileCookie && corsResponse) {
           const expires = Math.floor(Date.now() / 1000) + 3600;
           const cookieData = { expires, verified: true, timestamp: Date.now() };
           const encryptedCookie = await encryptCookieData(cookieData, env);
           
-          const newHeaders = new Headers(response.headers);
-          newHeaders.set('Set-Cookie', `turnstile_verified=${encryptedCookie}; path=/; max-age=3600; SameSite=Lax; HttpOnly`);
+          const newHeaders = new Headers(corsResponse.headers);
+          newHeaders.set('Set-Cookie', `turnstile_verified=${encryptedCookie}; path=/; max-age=3600; SameSite=None; Secure; HttpOnly`);
           
-          const newResponse = new Response(response.body, {
-            status: response.status,
+          const newResponse = new Response(corsResponse.body, {
+            status: corsResponse.status,
             headers: newHeaders
           });
           return newResponse;
         }
         
-        return response;
+        return corsResponse;
       }
     }
 
     await ensureFullSettings();
-    return serveFrontend(request, env, sys);
+    const frontendResponse = await serveFrontend(request, env, sys);
+    return applyCors(frontendResponse, request, corsAllowedOrigins);
   },
 
   async scheduled(event, env, ctx) {
